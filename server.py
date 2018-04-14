@@ -5,6 +5,8 @@ import pickle
 
 clients = {}
 addresses = {}
+file_addresses = {}
+file_clients = {}
 
 host = '127.0.0.1'
 port = 8080
@@ -18,8 +20,31 @@ server.bind(address)
 def accepting_connection():
     while True:
         connection, address = server.accept()
+        file_connection, file_address = server.accept()
         addresses[connection] = address
+        file_addresses[file_connection] = file_address
         Thread(target=handle_client, args=(connection,)).start()
+        Thread(target=handle_client_file, args=(file_connection,)).start()
+
+
+def handle_client_file(client):
+    file_name = client.recv(buffer_size).decode('utf8')
+    with open('files/' + file_name, "wb") as fw:
+        print("Receiving..")
+        while True:
+            print('receiving')
+            data = client.recv(buffer_size)
+            if data == b'BEGIN':
+                continue
+            elif data == b'ENDED':
+                print('Breaking from file write')
+                break
+            else:
+                print('Received: ', data.decode('utf-8'))
+                fw.write(data)
+                print('Wrote to file', data.decode('utf-8'))
+        fw.close()
+        print("Received..")
 
 
 def handle_client(client):
